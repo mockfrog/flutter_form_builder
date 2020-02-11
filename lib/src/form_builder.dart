@@ -6,14 +6,14 @@ class FormBuilder extends StatefulWidget {
   //final BuildContext context;
   final Function(Map<String, dynamic>) onChanged;
   final WillPopCallback onWillPop;
-  final Widget child;
+  final WidgetBuilder builder;
   final bool readOnly;
   final bool autovalidate;
   final Map<String, dynamic> initialValue;
 
   const FormBuilder({
     Key key,
-    @required this.child,
+    @required this.builder,
     this.readOnly = false,
     this.onChanged,
     this.autovalidate = false,
@@ -31,7 +31,7 @@ class FormBuilder extends StatefulWidget {
 class FormBuilderState extends State<FormBuilder> {
   //TODO: Find way to assert no duplicates in control attributes
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  
+
   Map<String, GlobalKey<FormFieldState>> _fieldKeys;
 
   Map<String, dynamic> _value;
@@ -47,7 +47,7 @@ class FormBuilderState extends State<FormBuilder> {
   @override
   void initState() {
     _fieldKeys = {};
-    _value = {};
+    _value = initialValue ?? {};
     super.initState();
   }
 
@@ -57,9 +57,254 @@ class FormBuilderState extends State<FormBuilder> {
     super.dispose();
   }
 
+  void updateValue(Map<String, dynamic> newValue) {
+    setState(() {
+      _value = newValue;
+    });
+  }
+
+  int getListLength(String attribute) {
+    /*var key = attribute;
+    var pos = attribute.lastIndexOf(".");
+
+    if (pos != -1) {
+      key = attribute.substring(pos + 1);
+      attribute = attribute.substring(0, pos);
+    }*/
+
+    dynamic ref = _value;
+    while (attribute.length > 0) {
+      var pos = attribute.indexOf(".");
+      if (pos != -1) {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute.substring(0, pos));
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          var sub = attribute.substring(0, pos);
+          ref = ref[sub];
+        }
+        attribute = attribute.substring(pos + 1);
+      } else {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute);
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          ref = ref[attribute];
+        }
+        attribute = "";
+      }
+    }
+    return (ref as List<dynamic>).length;
+  }
+
+  void addListItem(String attribute, Map<String, dynamic> listItem) {
+    save();
+    var key = attribute;
+    var pos = attribute.lastIndexOf(".");
+
+    if (pos != -1) {
+      key = attribute.substring(pos + 1);
+      attribute = attribute.substring(0, pos);
+    }
+
+    // key must be index
+    int idx = int.tryParse(key);
+    assert(idx != null);
+    if (idx == null) {
+      return;
+    }
+
+    dynamic ref = _value;
+    while (attribute.length > 0) {
+      pos = attribute.indexOf(".");
+      if (pos != -1) {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute.substring(0, pos));
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          var sub = attribute.substring(0, pos);
+          ref = ref[sub];
+        }
+        attribute = attribute.substring(pos + 1);
+      } else {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute);
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          ref = ref[attribute];
+        }
+        attribute = "";
+      }
+    }
+    setState(() {
+      (ref as List<dynamic>).insert(idx, listItem);
+    });
+  }
+
+  void removeListItem(String attribute) {
+    save();
+    var key = attribute;
+    var pos = attribute.lastIndexOf(".");
+
+    if (pos != -1) {
+      key = attribute.substring(pos + 1);
+      attribute = attribute.substring(0, pos);
+    }
+
+    // key must be index
+    int idx = int.tryParse(key);
+    assert(idx != null);
+    if (idx == null) {
+      return;
+    }
+
+    dynamic ref = _value;
+    while (attribute.length > 0) {
+      pos = attribute.indexOf(".");
+      if (pos != -1) {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute.substring(0, pos));
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          var sub = attribute.substring(0, pos);
+          ref = ref[sub];
+        }
+        attribute = attribute.substring(pos + 1);
+      } else {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute);
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          ref = ref[attribute];
+        }
+        attribute = "";
+      }
+    }
+    setState(() {
+      (ref as List<dynamic>).removeAt(idx);
+    });
+  }
+
+  bool hasAttributeValue(String attribute) {
+    var key = attribute;
+    var pos = attribute.lastIndexOf(".");
+
+    if (pos != -1) {
+      key = attribute.substring(pos + 1);
+      attribute = attribute.substring(0, pos);
+    }
+
+    dynamic ref = _value;
+    while (attribute.length > 0) {
+      pos = attribute.indexOf(".");
+      if (pos != -1) {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute.substring(0, pos));
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          var sub = attribute.substring(0, pos);
+          ref = ref[sub];
+        }
+        attribute = attribute.substring(pos + 1);
+      } else {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute);
+          if (ref.length > idx) {
+            ref = ref[idx];
+          } else {
+            return false;
+          }
+        } else if (ref is Map<String, dynamic>) {
+          ref = ref[attribute];
+        }
+        attribute = "";
+      }
+    }
+    return (ref is Map<String, dynamic>) && ref.containsKey(key);
+  }
+
+  dynamic getAttributeValue(String attribute) {
+    var key = attribute;
+    var pos = attribute.lastIndexOf(".");
+
+    if (pos != -1) {
+      key = attribute.substring(pos + 1);
+      attribute = attribute.substring(0, pos);
+    }
+
+    dynamic ref = _value;
+    while (attribute.length > 0) {
+      pos = attribute.indexOf(".");
+      if (pos != -1) {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute.substring(0, pos));
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          var sub = attribute.substring(0, pos);
+          ref = ref[sub];
+        }
+        attribute = attribute.substring(pos + 1);
+      } else {
+        if (ref is List<dynamic>) {
+          var idx = int.parse(attribute);
+          assert(ref.length > idx);
+          ref = ref[idx];
+        } else if (ref is Map<String, dynamic>) {
+          ref = ref[attribute];
+        }
+        attribute = "";
+      }
+    }
+    return ref[key];
+  }
+
   void setAttributeValue(String attribute, dynamic value) {
     setState(() {
-      _value[attribute] = value;
+      var key = attribute;
+      var pos = attribute.lastIndexOf(".");
+
+      if (pos != -1) {
+        key = attribute.substring(pos + 1);
+        attribute = attribute.substring(0, pos);
+      }
+
+      dynamic ref = _value;
+      while (attribute.length > 0) {
+        pos = attribute.indexOf(".");
+        if (pos != -1) {
+          if (ref is List<dynamic>) {
+            var idx = int.parse(attribute.substring(0, pos));
+            assert(ref.length > idx);
+            ref = ref[idx];
+          } else if (ref is Map<String, dynamic>) {
+            var sub = attribute.substring(0, pos);
+            ref = ref[sub];
+          }
+          attribute = attribute.substring(pos + 1);
+        } else {
+          if (ref is List<dynamic>) {
+            var idx = int.parse(attribute);
+            if (ref.length > idx) {
+              ref = ref[idx];
+            } else {
+              print("attribute could not be set");
+              return;
+            }
+          } else if (ref is Map<String, dynamic>) {
+            ref = ref[attribute];
+          }
+          attribute = "";
+        }
+      }
+      ref[key] = value;
     });
   }
 
@@ -103,7 +348,7 @@ class FormBuilderState extends State<FormBuilder> {
   Widget build(BuildContext context) {
     return Form(
       key: _formKey,
-      child: widget.child,
+      child: widget.builder(context),
       autovalidate: widget.autovalidate,
       onWillPop: widget.onWillPop,
       onChanged: () {
