@@ -21,8 +21,7 @@ class FormBuilder extends StatefulWidget {
     this.initialValue = const {},
   }) : super(key: key);
 
-  static FormBuilderState of(BuildContext context) =>
-      context.findAncestorStateOfType<FormBuilderState>();
+  static FormBuilderState of(BuildContext context) => context.findAncestorStateOfType<FormBuilderState>();
 
   @override
   FormBuilderState createState() => FormBuilderState();
@@ -198,6 +197,8 @@ class FormBuilderState extends State<FormBuilder> {
     if (pos != -1) {
       key = attribute.substring(pos + 1);
       attribute = attribute.substring(0, pos);
+    } else {
+      return _value.containsKey(key);
     }
 
     dynamic ref = _value;
@@ -237,6 +238,8 @@ class FormBuilderState extends State<FormBuilder> {
     if (pos != -1) {
       key = attribute.substring(pos + 1);
       attribute = attribute.substring(0, pos);
+    } else {
+      return _value[key];
     }
 
     dynamic ref = _value;
@@ -274,6 +277,10 @@ class FormBuilderState extends State<FormBuilder> {
       if (pos != -1) {
         key = attribute.substring(pos + 1);
         attribute = attribute.substring(0, pos);
+      } else {
+        assert(_value.containsKey(key));
+        _value[key] = value;
+        return;
       }
 
       dynamic ref = _value;
